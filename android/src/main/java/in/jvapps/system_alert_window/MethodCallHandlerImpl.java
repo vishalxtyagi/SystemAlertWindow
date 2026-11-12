@@ -167,19 +167,21 @@ public class MethodCallHandlerImpl implements MethodChannel.MethodCallHandler, P
                             i.putExtra(INTENT_EXTRA_IS_UPDATE_WINDOW, true);
                             // Show already started the service, so a plain start doesn't arm a second
                             // startForeground() deadline.
-                            if (WindowServiceNew.isRunning || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                                try {
+                            try {
+                                if (WindowServiceNew.isRunning || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
                                     mContext.startService(i);
-                                } catch (IllegalStateException e) {
-                                    // Service stopped between stopSelf() and onDestroy() while the app is in
-                                    // the background, so Android rejects the start.
-                                    LogUtils.getInstance().e(TAG, "Update rejected, service is stopping: " + e.getMessage());
-                                    result.success(false);
-                                    break;
+                                } else {
+                                    mContext.startForegroundService(i);
+                                    WindowServiceNew.isRunning = true;
                                 }
-                            } else {
-                                mContext.startForegroundService(i);
-                                WindowServiceNew.isRunning = true;
+                            } catch (IllegalStateException e) {
+                                // Android rejects the start from the background: startService() while the
+                                // service is stopping, or startForegroundService() on 12+
+                                // (ForegroundServiceStartNotAllowedException). Reply so the Dart await
+                                // doesn't hang on the outer catch, which only logs.
+                                LogUtils.getInstance().e(TAG, "Update rejected: " + e.getMessage());
+                                result.success(false);
+                                break;
                             }
                             result.success(true);
                         } else {
