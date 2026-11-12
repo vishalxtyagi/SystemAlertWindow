@@ -1,3 +1,8 @@
+## 2.0.12
+
+* Close no longer starts a stopped `WindowServiceNew` just to stop it, and update uses `startService()` while the service is running. This fixes `ForegroundServiceDidNotStartInTimeException` when the app is in the background on Android 15+.
+* Close and update handle Android rejecting the service start in the background. Update now returns `false` instead of never completing.
+
 ## 2.0.11
 
 * Fixed unit test — corrected channel name and codec to match the plugin's `JSONMethodCodec` registration.
